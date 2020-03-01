@@ -1,6 +1,7 @@
 package me.syj.examplerestapi.events;
 
 import lombok.*;
+import org.springframework.util.StringUtils;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -25,5 +26,12 @@ public class Event {
     private boolean free;
     @Enumerated(EnumType.STRING)
     private EventStatus eventStatus = EventStatus.DRAFT;
+
+    public void update() {
+        // update free
+        free = basePrice == 0 && maxPrice == 0;
+        // update offline
+        offline = StringUtils.hasText(location);
+    }
 
 }

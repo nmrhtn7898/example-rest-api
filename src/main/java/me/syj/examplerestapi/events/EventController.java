@@ -3,6 +3,7 @@ package me.syj.examplerestapi.events;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.Errors;
@@ -36,9 +37,14 @@ public class EventController {
             return ResponseEntity.badRequest().body(errors);
         }
         Event event = modelMapper.map(eventDto, Event.class);
+        event.update();
         Event save = eventRepository.save(event);
-        URI createdUri = linkTo(EventController.class).slash(save.getId()).toUri();
-        return ResponseEntity.created(createdUri).body(event);
+        WebMvcLinkBuilder selfLinkBuilder = linkTo(EventController.class).slash(save.getId());
+        EventResource eventResource = new EventResource(event);
+        eventResource
+                .add(linkTo(EventController.class).withRel("query-events"))
+                .add(selfLinkBuilder.withRel("update-event"));
+        return ResponseEntity.created(selfLinkBuilder.toUri()).body(eventResource);
 
     }
 
