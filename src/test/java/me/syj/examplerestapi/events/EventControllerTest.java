@@ -16,13 +16,20 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.time.LocalDateTime;
+import java.util.stream.IntStream;
 
 import static org.springframework.restdocs.headers.HeaderDocumentation.*;
-import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.*;
+import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.linkWithRel;
+import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.links;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.payload.PayloadDocumentation.*;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -33,13 +40,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureRestDocs
 @Import(RestDocsConfiguration.class)
 @ActiveProfiles("test")
-public class EventControllerTests {
+public class EventControllerTest {
 
     @Autowired
     MockMvc mockMvc;
 
     @Autowired
     ObjectMapper objectMapper;
+
+    @Autowired
+    EventRepository eventRepository;
 
     @Test
     @DisplayName("정삭적으로 이벤트를 생성하는 테스트")
@@ -183,6 +193,88 @@ public class EventControllerTests {
                 .andExpect(jsonPath("content[0].code").exists())
                 .andExpect(jsonPath("_links.index").exists())
         ;
+    }
+
+    @Test
+    @DisplayName("30개의 이벤트를 10개씩 두번쨰 페이지 조회 테스트")
+    public void queryEvents() throws Exception {
+        // given
+        IntStream.range(0, 30).forEach(this::generateEvent);
+        // when
+        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        map.add("page", "1");
+        map.add("size", "10");
+        map.add("sort", "name,desc");
+        // then
+        mockMvc.perform(get("/api/events")
+                .params(map)
+                .accept(MediaTypes.HAL_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("page").exists())
+                .andExpect(jsonPath("_embedded.eventList[*]._links.self").exists())
+                .andExpect(jsonPath("_links.self").exists())
+                .andExpect(jsonPath("_links.profile").exists())
+                .andDo(document("query-events",
+                        links(
+                                linkWithRel("self").description("link to self"),
+                                linkWithRel("first").description("link to first page"),
+                                linkWithRel("last").description("link to last page"),
+                                linkWithRel("prev").description("link to prev page"),
+                                linkWithRel("next").description("link to next page"),
+                                linkWithRel("profile").description("link to profile")
+                        ),
+                        requestHeaders(
+                                headerWithName(HttpHeaders.ACCEPT).description("accept header")
+                        ),
+                        requestParameters(
+                                parameterWithName("page").description("number of page"),
+                                parameterWithName("size").description("size of page"),
+                                parameterWithName("sort").description("direction of sorting")
+                        ),
+                        responseHeaders(
+                                headerWithName(HttpHeaders.CONTENT_TYPE).description("content type header")
+                        ),
+                        responseFields(
+                                fieldWithPath("_embedded.eventList[*].id").description("identifier of event"),
+                                fieldWithPath("_embedded.eventList[*].name").description("name of event"),
+                                fieldWithPath("_embedded.eventList[*].description").description("description of event"),
+                                fieldWithPath("_embedded.eventList[*].beginEnrollmentDateTime").description("date time of begin enrollment of event"),
+                                fieldWithPath("_embedded.eventList[*].closeEnrollmentDateTime").description("date time of close enrollment of event"),
+                                fieldWithPath("_embedded.eventList[*].beginEventDateTime").description("date time of begin of event"),
+                                fieldWithPath("_embedded.eventList[*].endEventDateTime").description("date time of end of event"),
+                                fieldWithPath("_embedded.eventList[*].location").description("location of event"),
+                                fieldWithPath("_embedded.eventList[*].basePrice").description("base price of event"),
+                                fieldWithPath("_embedded.eventList[*].maxPrice").description("max price of event"),
+                                fieldWithPath("_embedded.eventList[*].limitOfEnrollment").description("limit of enrollment"),
+                                fieldWithPath("_embedded.eventList[*].offline").description("it tells is this event is free or not"),
+                                fieldWithPath("_embedded.eventList[*].free").description("it tells is this event is offline event or not"),
+                                fieldWithPath("_embedded.eventList[*].eventStatus").description("event status"),
+                                fieldWithPath("_embedded.eventList[*]._links.self.href").description("link to self"),
+                                fieldWithPath("_links.self.href").description("link to self"),
+                                fieldWithPath("_links.first.href").description("link to first page"),
+                                fieldWithPath("_links.last.href").description("link to last page"),
+                                fieldWithPath("_links.prev.href").description("link to prev page"),
+                                fieldWithPath("_links.next.href").description("link to next page"),
+                                fieldWithPath("_links.profile.href").description("link to profile"),
+                                fieldWithPath("page.number").description("number of page"),
+                                fieldWithPath("page.size").description("size of page"),
+                                fieldWithPath("page.totalElements").description("total count of all elements"),
+                                fieldWithPath("page.totalPages").description("total count of all pages")
+                        )
+                ));
+    }
+
+    /**
+     * event 객체 생성 및 저장
+     * @param index 인덱스
+     */
+    private void generateEvent(int index) {
+        Event event = Event.builder()
+                .name("event " + index)
+                .description("test event" + index)
+                .build();
+        eventRepository.save(event);
     }
 
 }
