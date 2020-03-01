@@ -1,4 +1,32 @@
+# Server Setting
+server:
+  port: 8080
+
 spring:
   jackson:
     deserialization:
-      FAIL_ON_UNKNOWN_PROPERTIES: true
+      FAIL_ON_UNKNOWN_PROPERTIES: true # 불필요한 데이터 바인딩 시 직렬화 하지 않고 에러 발생시킴
+# DB Connection Setting
+  datasource:
+    url: jdbc:mysql://localhost:3306/example?serverTimezone=UTC&useSSL=false
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+# JPA Setting
+  jpa:
+    hibernate:
+      ddl-auto: create
+      use-new-id-generator-mappings: false
+    properties:
+      hibernate:
+        format_sql: true
+# LOGGING Setting
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE
