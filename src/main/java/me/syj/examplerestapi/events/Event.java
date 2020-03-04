@@ -1,6 +1,7 @@
 package me.syj.examplerestapi.events;
 
 import lombok.*;
+import me.syj.examplerestapi.accounts.Account;
 import org.springframework.util.StringUtils;
 
 import javax.persistence.*;
@@ -26,6 +27,8 @@ public class Event {
     private boolean free;
     @Enumerated(EnumType.STRING)
     private EventStatus eventStatus = EventStatus.DRAFT;
+    @ManyToOne
+    private Account manager;
 
     public void update() {
         // update free
