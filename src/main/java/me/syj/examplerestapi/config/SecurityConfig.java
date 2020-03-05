@@ -44,13 +44,4 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         web.ignoring().requestMatchers(PathRequest.toStaticResources().atCommonLocations()); // 스프링 부트가 제공하는 static 리소스 시큐리티 해제 ex) /css, /js, /webjars ....
     }
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-                .formLogin()
-                .and()
-                .authorizeRequests()
-                .mvcMatchers(HttpMethod.GET, "/api/**").anonymous()
-                .anyRequest().authenticated();
-    }
 }
