@@ -1,7 +1,9 @@
 package me.syj.examplerestapi.config;
 
+import com.sun.javaws.security.AppPolicy;
 import lombok.RequiredArgsConstructor;
 import me.syj.examplerestapi.accounts.AccountService;
+import me.syj.examplerestapi.common.AppProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -26,6 +28,8 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
 
     private final AccountService accountService;
 
+    private final AppProperties appProperties;
+
     @Override
     public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
         security.passwordEncoder(passwordEncoder);
@@ -34,10 +38,10 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
         clients.inMemory()
-                .withClient("myApp")
+                .withClient(appProperties.getClientId())
                 .authorizedGrantTypes("password", "refresh_token")
                 .scopes("read", "write")
-                .secret(passwordEncoder.encode("pass"))
+                .secret(passwordEncoder.encode(appProperties.getClientSecret()))
                 .accessTokenValiditySeconds(60 * 10)
                 .refreshTokenValiditySeconds(60 * 10 * 6);
     }
