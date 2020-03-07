@@ -1,15 +1,12 @@
 package me.syj.examplerestapi.config;
 
-import me.syj.examplerestapi.accounts.Account;
-import me.syj.examplerestapi.accounts.AccountRole;
 import me.syj.examplerestapi.accounts.AccountService;
 import me.syj.examplerestapi.common.AppProperties;
 import me.syj.examplerestapi.common.BaseControllerTest;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.HashSet;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,10 +22,16 @@ public class AuthServerConfigTest extends BaseControllerTest {
     @Autowired
     AppProperties appProperties;
 
+    @After
+    public void setUp() {
+        accountService.deleteAll();
+    }
+
     @Test
-    @DisplayName("인증 토근을 발급 받는 테스트")
-    public void getAUthToken() throws Exception {
+    @DisplayName("로그인을 통해 인증 토근을 발급 받는 테스트")
+    public void getAuthToken() throws Exception {
         mockMvc.perform(post("/oauth/token")
+                // Authorization 헤더 값으로 Basic (clientId:clientSecret) <- Base64 인코딩값
                 .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret()))
                 .param("username", appProperties.getUserUsername())
                 .param("password", appProperties.getUserPassword())

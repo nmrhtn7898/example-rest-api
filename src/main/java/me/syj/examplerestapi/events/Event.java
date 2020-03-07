@@ -1,7 +1,9 @@
 package me.syj.examplerestapi.events;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 import me.syj.examplerestapi.accounts.Account;
+import me.syj.examplerestapi.accounts.AccountSerializer;
 import org.springframework.util.StringUtils;
 
 import javax.persistence.*;
@@ -28,6 +30,7 @@ public class Event {
     @Enumerated(EnumType.STRING)
     private EventStatus eventStatus = EventStatus.DRAFT;
     @ManyToOne
+    @JsonSerialize(using = AccountSerializer.class)
     private Account manager;
 
     public void update() {

@@ -6,6 +6,7 @@ spring:
   jackson:
     deserialization:
       FAIL_ON_UNKNOWN_PROPERTIES: true # 불필요한 데이터 바인딩 시 직렬화 하지 않고 에러 발생시킴
+
 # DB Connection Setting
   datasource:
     url: jdbc:mysql://localhost:3306/example?serverTimezone=UTC&useSSL=false
@@ -22,6 +23,7 @@ spring:
         format_sql: true
         default_batch_fetch_size: 1000
 #    open-in-view: false
+
 # LOGGING Setting
 logging:
   level:
@@ -34,6 +36,8 @@ logging:
               BasicBinder: TRACE
       springframework:
         security: DEBUG
+
+# configuration properties
 my-app:
   admin-username: admin@email.com
   admin-password: admin

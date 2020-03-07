@@ -2,13 +2,18 @@ package me.syj.examplerestapi.events;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import me.syj.examplerestapi.accounts.AccountRepository;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(JUnitParamsRunner.class)
 public class EventTest {
+
+    @Autowired
+    AccountRepository accountRepository;
 
     @Test
     public void builder() {

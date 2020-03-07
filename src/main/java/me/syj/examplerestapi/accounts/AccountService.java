@@ -31,4 +31,8 @@ public class AccountService implements UserDetailsService {
         account.setPassword(passwordEncoder.encode(account.getPassword()));
         return accountRepository.save(account);
     }
+
+    public void deleteAll() {
+        accountRepository.deleteAll();
+    }
 }

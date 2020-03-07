@@ -1,7 +1,6 @@
 package me.syj.examplerestapi.events;
 
 import me.syj.examplerestapi.accounts.Account;
-import me.syj.examplerestapi.accounts.AccountRepository;
 import me.syj.examplerestapi.accounts.AccountRole;
 import me.syj.examplerestapi.accounts.AccountService;
 import me.syj.examplerestapi.common.AppProperties;
@@ -43,15 +42,12 @@ public class EventControllerTest extends BaseControllerTest {
     AccountService accountService;
 
     @Autowired
-    AccountRepository accountRepository;
-
-    @Autowired
     AppProperties appProperties;
 
     @Before
     public void setUp() {
         eventRepository.deleteAll();
-        accountRepository.deleteAll();
+        accountService.deleteAll();
     }
 
     @Test
@@ -71,7 +67,7 @@ public class EventControllerTest extends BaseControllerTest {
                 .build();
 
         mockMvc.perform(post("/api/events/")
-                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken(true))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaTypes.HAL_JSON)
                 .content(objectMapper.writeValueAsString(event)))
@@ -126,9 +122,6 @@ public class EventControllerTest extends BaseControllerTest {
                                 fieldWithPath("offline").description("it tells is this event is offline event or not"),
                                 fieldWithPath("eventStatus").description("event status"),
                                 fieldWithPath("manager.id").description("manager id of event"),
-                                fieldWithPath("manager.email").description("manager email of event"),
-                                fieldWithPath("manager.password").description("manager password of event"),
-                                fieldWithPath("manager.roles").description("manager roles of event"),
                                 fieldWithPath("_links.self.href").description("link to self"),
                                 fieldWithPath("_links.query-events.href").description("link to query event list"),
                                 fieldWithPath("_links.update-event.href").description("link to update existing event"),
@@ -158,7 +151,7 @@ public class EventControllerTest extends BaseControllerTest {
                 .build();
 
         mockMvc.perform(post("/api/events/")
-                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken(true))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaTypes.HAL_JSON)
                 .content(objectMapper.writeValueAsString(event)))
@@ -172,7 +165,7 @@ public class EventControllerTest extends BaseControllerTest {
     public void createEvent_Bad_Request_Empty_Input() throws Exception {
         EventDto eventDto = EventDto.builder().build();
         mockMvc.perform(post("/api/events")
-                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken(true))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(eventDto)))
                 .andExpect(status().isBadRequest())
@@ -195,7 +188,7 @@ public class EventControllerTest extends BaseControllerTest {
                 .location("강남역 D2 스타텁 팩토리")
                 .build();
         mockMvc.perform(post("/api/events")
-                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken(true))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
@@ -211,7 +204,8 @@ public class EventControllerTest extends BaseControllerTest {
     @DisplayName("30개의 이벤트를 10개씩 두번쨰 페이지 조회 테스트")
     public void queryEvents() throws Exception {
         // given
-        IntStream.range(0, 30).forEach(this::generateEvent);
+        Account account = generateAccount();
+        IntStream.range(0, 30).forEach(i -> generateEvent(i, account));
         // when
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         map.add("page", "1");
@@ -263,9 +257,6 @@ public class EventControllerTest extends BaseControllerTest {
                                 fieldWithPath("_embedded.eventList[*].free").description("it tells is this event is offline event or not"),
                                 fieldWithPath("_embedded.eventList[*].eventStatus").description("event status"),
                                 fieldWithPath("_embedded.eventList[*].manager.id").description("manager id of event"),
-                                fieldWithPath("_embedded.eventList[*].manager.email").description("manager email of event"),
-                                fieldWithPath("_embedded.eventList[*].manager.password").description("manager password of event"),
-                                fieldWithPath("_embedded.eventList[*].manager.roles").description("manager roles of event"),
                                 fieldWithPath("_embedded.eventList[*]._links.self.href").description("link to self"),
                                 fieldWithPath("_links.self.href").description("link to self"),
                                 fieldWithPath("_links.first.href").description("link to first page"),
@@ -285,7 +276,7 @@ public class EventControllerTest extends BaseControllerTest {
     @DisplayName("인증 토근을 발급 받은 상태에서 30개의 이벤트를 10개씩 두번쨰 페이지 조회 테스트")
     public void queryEventsWithAuthentication() throws Exception {
         // given
-        IntStream.range(0, 30).forEach(i -> generateEvent(i));
+        IntStream.range(0, 30).forEach(this::generateEvent);
         // when
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         map.add("page", "1");
@@ -293,7 +284,7 @@ public class EventControllerTest extends BaseControllerTest {
         map.add("sort", "name,desc");
         // then
         mockMvc.perform(get("/api/events")
-                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken(true))
                 .params(map)
                 .accept(MediaTypes.HAL_JSON))
                 .andDo(print())
@@ -310,7 +301,8 @@ public class EventControllerTest extends BaseControllerTest {
     @DisplayName("기존의 이벤트를 하나 조회하기")
     public void getEvent() throws Exception {
         // given
-        Event event = generateEvent(1);
+        Account account = generateAccount();
+        Event event = generateEvent(1, account);
         // when & then
         mockMvc.perform(RestDocumentationRequestBuilders.get("/api/events/{id}", event.getId())
                 .accept(MediaTypes.HAL_JSON))
@@ -349,9 +341,6 @@ public class EventControllerTest extends BaseControllerTest {
                                 fieldWithPath("offline").description("it tells is this event is free or not"),
                                 fieldWithPath("free").description("it tells is this event is offline event or not"),
                                 fieldWithPath("manager.id").description("manager id of event"),
-                                fieldWithPath("manager.email").description("manager email of event"),
-                                fieldWithPath("manager.password").description("manager password of event"),
-                                fieldWithPath("manager.roles").description("manager roles of event"),
                                 fieldWithPath("eventStatus").description("event status"),
                                 fieldWithPath("_links.self.href").description("link to self"),
                                 fieldWithPath("_links.profile.href").description("link to profile")
@@ -374,13 +363,14 @@ public class EventControllerTest extends BaseControllerTest {
     @DisplayName("이벤트를 정상적으로 수정하기")
     public void updateEvent() throws Exception {
         // given
-        Event event = generateEvent(1);
+        Account account = generateAccount();
+        Event event = generateEvent(1, account);
         String eventName = "update event";
         EventDto eventDto = modelMapper.map(event, EventDto.class);
         eventDto.setName(eventName);
         // when & then
         mockMvc.perform(RestDocumentationRequestBuilders.put("/api/events/{id}", event.getId())
-                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken(false))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(eventDto))
                 .accept(MediaTypes.HAL_JSON))
@@ -430,6 +420,7 @@ public class EventControllerTest extends BaseControllerTest {
                                 fieldWithPath("offline").description("it tells is this event is free or not"),
                                 fieldWithPath("free").description("it tells is this event is offline event or not"),
                                 fieldWithPath("eventStatus").description("event status"),
+                                fieldWithPath("manager.id").description("manager id of event"),
                                 fieldWithPath("_links.self.href").description("link to self"),
                                 fieldWithPath("_links.profile.href").description("link to profile")
                         )
@@ -446,7 +437,6 @@ public class EventControllerTest extends BaseControllerTest {
         eventDto.setName(eventName);
         // when & then
         mockMvc.perform(RestDocumentationRequestBuilders.put("/api/events/{id}", event.getId())
-                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(eventDto))
                 .accept(MediaTypes.HAL_JSON))
@@ -463,7 +453,7 @@ public class EventControllerTest extends BaseControllerTest {
         EventDto eventDto = new EventDto();
         // when & then
         mockMvc.perform(put("/api/events/{id}", event.getId())
-                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken(true))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
@@ -481,7 +471,7 @@ public class EventControllerTest extends BaseControllerTest {
         eventDto.setBasePrice(1000);
         // when & then
         mockMvc.perform(put("/api/events/{id}", event.getId())
-                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken(true))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
@@ -497,7 +487,7 @@ public class EventControllerTest extends BaseControllerTest {
         EventDto eventDto = modelMapper.map(event, EventDto.class);
         // when & then
         mockMvc.perform(put("/api/events/123123")
-                .header(HttpHeaders.AUTHORIZATION, getAuthToken())
+                .header(HttpHeaders.AUTHORIZATION, getAuthToken(true))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
@@ -506,18 +496,19 @@ public class EventControllerTest extends BaseControllerTest {
     }
 
     private Event generateEvent(int index) {
-        HashSet<AccountRole> set = new HashSet<>();
-        set.add(AccountRole.USER);
-        Account testUser = Account.builder()
-                .email("test_user" + index)
-                .password("1234")
-                .roles(set)
-                .build();
-        accountService.join(testUser);
+        return eventRepository.save(buildEvent(index));
+    }
 
+    private Event generateEvent(int index, Account account) {
+        Event event = buildEvent(index);
+        event.setManager(account);
+        return eventRepository.save(event);
+    }
+
+    private Event buildEvent(int index) {
         Event event = Event.builder()
-                .name("Spring")
-                .description("REST API")
+                .name("event " + index)
+                .description("test event" + index)
                 .beginEnrollmentDateTime(LocalDateTime.of(2020, 2, 2, 16, 21))
                 .closeEnrollmentDateTime(LocalDateTime.of(2020, 2, 3, 16, 21))
                 .beginEventDateTime(LocalDateTime.of(2020, 2, 10, 16, 21))
@@ -526,13 +517,26 @@ public class EventControllerTest extends BaseControllerTest {
                 .maxPrice(200)
                 .limitOfEnrollment(100)
                 .location("강남역 D2 스타텁 팩토리")
-                .manager(testUser)
                 .build();
         event.update();
-        return eventRepository.save(event);
+        return event;
     }
 
-    private String getAuthToken() throws Exception {
+    private String getAuthToken(boolean needToGenerateAccount) throws Exception {
+        if (needToGenerateAccount) {
+            generateAccount();
+        }
+        ResultActions perform = mockMvc.perform(post("/oauth/token")
+                .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret()))
+                .param("username", appProperties.getUserUsername())
+                .param("password", appProperties.getUserPassword())
+                .param("grant_type", "password"));
+        String responseBody = perform.andReturn().getResponse().getContentAsString();
+        Jackson2JsonParser parser = new Jackson2JsonParser();
+        return "Bearer " + parser.parseMap(responseBody).get("access_token").toString();
+    }
+
+    private Account generateAccount() {
         HashSet<AccountRole> set = new HashSet<>();
         set.add(AccountRole.ADMIN);
         set.add(AccountRole.USER);
@@ -541,17 +545,7 @@ public class EventControllerTest extends BaseControllerTest {
                 .password(appProperties.getUserPassword())
                 .roles(set)
                 .build();
-        accountService.join(account);
-
-        ResultActions perform = mockMvc.perform(post("/oauth/token")
-                .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret()))
-                .param("username", appProperties.getUserUsername())
-                .param("password", appProperties.getUserPassword())
-                .param("grant_type", "password"));
-
-        String responseBody = perform.andReturn().getResponse().getContentAsString();
-        Jackson2JsonParser parser = new Jackson2JsonParser();
-        return "Bearer " + parser.parseMap(responseBody).get("access_token").toString();
+        return accountService.join(account);
     }
 
 }
